@@ -26,19 +26,25 @@ tonehf = 0
 tonela = 0
 tonelf = 0
 #
-preset = 6
+preset = 1
 # Some preset examples
-preset_00 = 109.206.96.34:8100                       #  0 - NAXI LOVE RADIO, Belgrade, Serbia
-preset_01 = airspectrum.cdnstream1.com:8114/1648_128 #  1 - Easy Hits Florida 128k
-preset_02 = stream.hitfm.de:9050/live                #  2 - 89 HIT FM - Munichs Power Station, 128k
-preset_03 = airspectrum.cdnstream1.com:8000/1261_192 #  3 - Magic Oldies Florida
-preset_04 = airspectrum.cdnstream1.com:8008/1604_128 #  4 - Magic 60s Florida 60s Classic Rock
-preset_05 = us1.internet-radio.com:8105              #  5 - Classic Rock Florida - SHE Radio
-preset_06 = icecast.omroep.nl:80/radio1-bb-mp3       #  6 - Radio 1, NL, 192k
-preset_07 = 205.164.62.15:10032                      #  7 - 1.FM - GAIA, 64k
-preset_08 = www.doowopradio.com:8000                 #  8 - Doo-Wop Radio, 96k
-preset_09 = server-27.stream-server.nl:8192/stream   #  9 - 192 Radio Nederland, 320k
-#
+preset_01 = asculta.danceeffect.ro:3333 # Dance Effect Radio
+preset_02 = icast.connectmedia.hu/4726/mr1ex.mp3 # Kosuth Radio
+preset_03 = mr-stream.connectmedia.hu/4738/mr2.mp3 # Petofi Radio
+preset_04 = adas.erdelyimagyarradio.eu:8000/emr # Erdely Magyar Radio
+preset_05 = streaming.radiomures.ro:8312/;stream # Marosvásárhelyi Rádió
+preset_06 = live.city-radio.ro:8800 # City Radio
+preset_07 = edge126.rdsnet.ro:84/profm/dancefm.mp3 # DanceFM 89.5
+preset_08 = kft.kesintisizyayin.com:8130/stream # Panonia Radio
+preset_09 = s01.diazol.hu:35002/live.mp3 # Club Dance Radio
+preset_10 = live2.magicdiscoradio.com:4420/ # Magic Disco Radio
+preset_11 = stream.diazol.hu:35150/stream # SuperDJ Radio
+preset_12 = live.notafm.hu:8000/notafm.mp3 # Nota Radio
+preset_13 = stream.folkradio.hu/folkradio.mp3 # Folkradio
+preset_14 = bdpstrock.hu/live.mp3 # Budapest Rock
+preset_15 = online.szentistvanradio.hu:8000 # Szent István Radió
+preset_16 = radio.szentkoronaradio.com:8048 # Szent Korona Radio
+preset_17 = stream.mariaradio.ro:8000/MRE_LQ # Mária Rádió Erdély
 # Clock offset and daylight saving time
 clk_server = pool.ntp.org                            # Time server to be used
 clk_offset = 1                                       # Offset with respect to UTC in hours
