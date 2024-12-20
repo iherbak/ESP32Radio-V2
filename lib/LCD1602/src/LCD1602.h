@@ -55,6 +55,7 @@
 #define COMMAND_DISPLAY_CONTROL 0x08
 #define COMMAND_FUNCTION_SET 0x20
 #define COMMAND_SET_DDRAM_ADDR 0x80
+#define COMMAND_SET_CGRAM_ADDR 0x40
 //
 #define FLAG_DISPLAY_CONTROL_DISPLAY_ON 0x04
 #define FLAG_DISPLAY_CONTROL_CURSOR_ON 0x02
@@ -113,6 +114,7 @@ void LCD1602_displaytime(const char *str, uint16_t color = 0xFFFF);
 void LCD1602_displaybitrate(const char *str, uint16_t color = 0xFFFF);
 bool LCD1602_dsp_begin(int8_t sda, int8_t scl);
 void LCD1602_dsp_update(bool isvolume, int section);
+void createCustomChars();
 
 class LCD1602
 {
@@ -125,12 +127,14 @@ public:
   void shome();                           // Go to home position
   void scursor(uint8_t col, uint8_t row); // Position the cursor
   void scroll(bool son);                  // Set scroll on/off
+  void createChar(uint8_t location, uint8_t charmap[]);
 private:
   void scommand(uint8_t cmd);
   void strobe(uint8_t cmd);
   void swrite(uint8_t val, uint8_t rs);
   void write_cmd(uint8_t val);
   void write_data(uint8_t val);
+
   uint8_t bl = FLAG_BACKLIGHT_ON; // Backlight in every command
   uint8_t xchar = 0;              // Current cursor position (text)
   uint8_t ychar = 0;              // Current cursor position (text)

@@ -22,6 +22,7 @@
 #include <Wire.h>
 #include "LCD1602.h"
 #include <vector>
+#include "helper.h"
 
 scrseg_struct LCD1602_tftdata[TFTSECS] = // Screen divided in 4 segments
     {
@@ -256,7 +257,18 @@ LCD1602::LCD1602(int8_t sda, int8_t scl)
                LCD_I2C_ADDRESS);
     }
   }
+
   reset();
+}
+
+void LCD1602::createChar(uint8_t location, uint8_t charmap[])
+{
+  location &= 0x7; // we only have 8 locations 0-7
+  write_cmd(COMMAND_SET_CGRAM_ADDR | (location << 3));
+  for (int i = 0; i < 8; i++)
+  {
+    write_data(charmap[i]);
+  }
 }
 
 bool LCD1602_dsp_begin(int8_t sda, int8_t scl)
@@ -322,7 +334,8 @@ void LCD1602_dsp_update_line(uint8_t lnr)
     {
       ESP_LOGI(LTAG, "Section %d switching to non scroll", lnr);
     }
-    if (fulllength > segmentlen && !tftdata[lnr].scrollable){
+    if (fulllength > segmentlen && !tftdata[lnr].scrollable)
+    {
       ESP_LOGI(LTAG, "Section %d switching to scroll", lnr);
     }
     tftdata[lnr].scrollable = fulllength <= segmentlen ? false : true;
@@ -345,7 +358,8 @@ void LCD1602_dsp_update_line(uint8_t lnr)
 
 void replacespecchars(String &s)
 {
-  s.replace("''", "");
+  //char *convertted = convertUsingCustomChars(s.c_str(), false);
+  //ESP_LOGI(LTAG,"Converted %s",convertted);
   s.replace("á", "a");
   s.replace("Á", "A");
   s.replace("é", "e");
@@ -358,6 +372,7 @@ void replacespecchars(String &s)
   s.replace("Ú", "U");
   s.replace("ü", "u");
   s.replace("Ű", "u");
+  //s = String(convertted);
   for (int i = 0; i < s.length(); i++)
   {
     if ((s[i] < ' ') || (s[i] > '~'))
@@ -443,11 +458,6 @@ void LCD1602_displayvolume(uint8_t vol)
 //**************************************************************************************************
 void LCD1602_displaytime(const char *str, uint16_t color)
 {
-  // String s = String(str);
-  // LCD1602_tftdata[2].str = s;
-  // LCD1602_tftdata[2].idle = false;
-  // ESP_LOGI(LTAG,"Time is: %s",str);
-  // LCD1602_dsp_update_line(2);
 }
 //**************************************************************************************************
 //                                      D I S P L A Y T I M E                                      *
@@ -457,10 +467,95 @@ void LCD1602_displaytime(const char *str, uint16_t color)
 
 void LCD1602_displaybitrate(const char *str, uint16_t color)
 {
-  // String s = String(str);
-  // s.trim();
-  // LCD1602_tftdata[3].str = s;
-  // filltexttomax(LCD1602_tftdata[3].str, LCD1602_tftdata[3].len);
-  // LCD1602_tftdata[3].idle = false;
-  // ESP_LOGI(LTAG, "Bitrate is: %s len: %d", s, s.length());
+}
+
+void createCustomChars()
+{
+  byte charA[8] = {
+      0b00010,
+      0b00100,
+      0b01110,
+      0b10001,
+      0b11111,
+      0b10001,
+      0b10001,
+      0b00000}; // Á
+
+  byte charE[8] = {
+      0b00001,
+      0b00010,
+      0b11111,
+      0b10000,
+      0b11111,
+      0b10000,
+      0b11111,
+      0b00000}; // É
+
+  byte charO[8] = {
+      0b00010,
+      0b00100,
+      0b01110,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b01110,
+      0b00000}; // Ó
+
+  byte charOO[8] = {
+      0b01010,
+      0b00000,
+      0b01110,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b01110,
+      0b00000}; // Ö
+
+  byte charOOO[8] = {
+      0b00101,
+      0b01010,
+      0b01110,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b01110,
+      0b00000}; // Ő
+
+  byte charU[8] = {
+      0b00010,
+      0b00100,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b01110,
+      0b00000}; // Ú
+
+  byte charUU[8] = {
+      0b01010,
+      0b00000,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b01110,
+      0b00000}; // Ü
+
+  byte charUUU[8] = {
+      0b00101,
+      0b01010,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b10001,
+      0b01110,
+      0b00000}; // Ű
+
+  LCD1602_tft->createChar(0, charA);
+  LCD1602_tft->createChar(1, charE);
+  LCD1602_tft->createChar(2, charO);
+  LCD1602_tft->createChar(3, charOO);
+  LCD1602_tft->createChar(4, charOOO);
+  LCD1602_tft->createChar(5, charU);
+  LCD1602_tft->createChar(6, charUU);
 }
