@@ -21,7 +21,7 @@ Preferences preferences ;         // Instance of Preferences
 void setup()
 {
   String       str ;
-  
+  ESP_LOGI("radioinit ino","Da fuck");
   Serial.begin ( 115200 ) ;
   Serial.println() ;
   preferences.begin ( NAME, false ) ;                 // Open for read/write
@@ -46,8 +46,8 @@ void setup()
   preferences.putString ( "tonela",      "0" ) ;
   preferences.putString ( "tonelf",      "0" ) ;
   //
-  preferences.putString ( "preset",      "6" ) ;
-  preferences.putString ( "preset_00",   "109.206.96.34:8100                       #  0 - NAXI LOVE RADIO, Belgrade, Serbia" ) ;
+  preferences.putString ( "preset",      "7" ) ;
+  preferences.putString ( "preset_00",   "109.206.96.34:8100                       #  0 - NAXI LOVE RADIO, Belgrade, Serbia" ) 
   preferences.putString ( "preset_01",   "airspectrum.cdnstream1.com:8114/1648_128 #  1 - Easy Hits Florida 128k" ) ;
   preferences.putString ( "preset_02",   "us2.internet-radio.com:8050              #  2 - CLASSIC ROCK MIA WWW.SHERADIO.COM" ) ;
   preferences.putString ( "preset_03",   "airspectrum.cdnstream1.com:8000/1261_192 #  3 - Magic Oldies Florida" ) ;

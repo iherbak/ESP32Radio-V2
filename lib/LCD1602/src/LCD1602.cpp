@@ -21,56 +21,56 @@
 
 #include <Wire.h>
 #include "LCD1602.h"
-#include <vector>
-#include "helper.h"
 
-scrseg_struct LCD1602_tftdata[TFTSECS] = // Screen divided in 4 segments
-    {
-        {true, 0, WHITE, 0, 0, RADIO_TITLE_MAX_LENGTH, "", 0, 0},                                // 1 title
-        {true, 0, WHITE, 0, 1, RDS_MAX_LENGTH, "", 0, 0},                                        // 2 rds info
-        {false, 0, WHITE, dsp_getwidth() - CLOCK_MAX_LENGTH, 0, CLOCK_MAX_LENGTH, "", 0, 0},     // 3 clock
-        {false, 0, WHITE, dsp_getwidth() - BITRATE_MAX_LENGTH, 1, BITRATE_MAX_LENGTH, "", 0, 0}, // 3 bitrate
+scrseg_struct     LCD1602_tftdata[TFTSECS] =                // Screen divided in 4 segments
+                      {
+                        { false, WHITE,   0,  0, "" },      // 1 top line (dummy)
+                        { false, WHITE,   0,  0, "" },      // 8 lines in the middle
+                        { false, WHITE,   0,  0, "" },      // 4 lines at the bottom
+                        { false, WHITE,   0,  0, "" }       // 4 lines at the bottom for rotary encoder
+                      } ;
 
-};
 
-LCD1602 *LCD1602_tft = NULL;
+LCD1602* LCD1602_tft = NULL ;
 
-const char *LTAG = "LCD1602"; // For debugging
-
-int pos = 0;
+const char*   LTAG = "LCD1602" ;                // For debugging
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2  write functions                                *
 //***********************************************************************************************
 // Write functins for command, data and general.                                                *
 //***********************************************************************************************
-void LCD1602::swrite(uint8_t val, uint8_t rs) // General write, 8 bits data
+void LCD1602::swrite ( uint8_t val, uint8_t rs )          // General write, 8 bits data
 {
-  strobe((val & 0xf0) | rs); // Send 4 LSB bits
-  strobe((val << 4) | rs);   // Send 4 MSB bits
+  strobe ( ( val & 0xf0 ) | rs ) ;                        // Send 4 LSB bits
+  strobe ( ( val << 4 ) | rs ) ;                          // Send 4 MSB bits
 }
 
-void LCD1602::write_data(uint8_t val)
+
+void LCD1602::write_data ( uint8_t val )
 {
-  swrite(val, FLAG_RS_DATA); // Send data (RS = HIGH)
+  swrite ( val, FLAG_RS_DATA ) ;                           // Send data (RS = HIGH)
 }
 
-void LCD1602::write_cmd(uint8_t val)
+
+void LCD1602::write_cmd ( uint8_t val )
 {
-  swrite(val, FLAG_RS_COMMAND); // Send command (RS = LOW)
+  swrite ( val, FLAG_RS_COMMAND ) ;                        // Send command (RS = LOW)
 }
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: S T R O B E                                  *
 //***********************************************************************************************
 // Send data followed by strobe to clock data to LCD.                                           *
 //***********************************************************************************************
-void LCD1602::strobe(uint8_t cmd)
+void LCD1602::strobe ( uint8_t cmd )
 {
-  scommand(cmd | FLAG_ENABLE);                  // Send command with E high
-  scommand(cmd);                                // Same command with E low
-  delayMicroseconds(DELAY_ENABLE_PULSE_SETTLE); // Wait a short time
+  scommand ( cmd | FLAG_ENABLE ) ;                  // Send command with E high
+  scommand ( cmd ) ;                                // Same command with E low
+  delayMicroseconds ( DELAY_ENABLE_PULSE_SETTLE ) ; // Wait a short time
 }
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: S C O M M A N D                              *
@@ -78,65 +78,39 @@ void LCD1602::strobe(uint8_t cmd)
 // Send a command to the LCD.                                                                   *
 // Actual I/O.  Open a channel to the I2C interface and write one byte.                         *
 //***********************************************************************************************
-void LCD1602::scommand(uint8_t cmd)
+void LCD1602::scommand ( uint8_t cmd )
 {
-  Wire.beginTransmission(LCD_I2C_ADDRESS);
-  Wire.write(cmd | bl); // Add command including BL state
-  Wire.endTransmission();
+  Wire.beginTransmission ( LCD_I2C_ADDRESS ) ;
+  Wire.write ( cmd | bl ) ;                               // Add command including BL state
+  Wire.endTransmission() ;
 }
+
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: P R I N T                                    *
 //***********************************************************************************************
 // Put a character in the buffer.                                                               *
 //***********************************************************************************************
-void LCD1602::print(char c)
+void LCD1602::print ( char c )
 {
-  write_data(c);
+  write_data ( c ) ;
 }
 
-void LCD1602::printstring(String &text)
-{
-  int newline = text.indexOf("\n");
-  ESP_LOGI(LTAG, "String is %s newline at %d", text.c_str(), newline);
-  std::vector<String> lines;
-  lines.reserve(2);
-  if (newline > 0)
-  {
-    lines.push_back(text.substring(0, newline));
-    lines.push_back(text.substring(newline + 1, text.length() - 1));
-  }
-  else
-  {
-    lines.push_back(text);
-  }
-  for (int i = 0; i < lines.size(); i++)
-  {
-    ESP_LOGI(LTAG, "Line%d: %s", i, lines[i].c_str());
-    LCD1602_tft->scursor(0, i);
-    const char *p;
-    p = lines[i].c_str();
-    int l = strlen(p);
-    // ESP_LOGI(LTAG,"String is %s length is (%d)",p, l);
-    for (int i = 0; i < l; i++)
-    {
-      write_data(*p++);
-    }
-  }
-}
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: S C U R S O R                                *
 //***********************************************************************************************
 // Place the cursor at the requested position.                                                  *
 //***********************************************************************************************
-void LCD1602::scursor(uint8_t col, uint8_t row)
+void LCD1602::scursor ( uint8_t col, uint8_t row )
 {
-  const int row_offsets[] = {0x00, 0x40, 0x14, 0x54};
-
-  write_cmd(COMMAND_SET_DDRAM_ADDR |
-            (col + row_offsets[row]));
+  const int row_offsets[] = { 0x00, 0x40, 0x14, 0x54 } ;
+  
+  write_cmd ( COMMAND_SET_DDRAM_ADDR |
+              ( col + row_offsets[row] ) ) ; 
 }
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: S C L E A R                                  *
@@ -145,25 +119,27 @@ void LCD1602::scursor(uint8_t col, uint8_t row)
 //***********************************************************************************************
 void LCD1602::sclear()
 {
-  write_cmd(COMMAND_CLEAR_DISPLAY);
+  write_cmd ( COMMAND_CLEAR_DISPLAY ) ;
 }
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: S C R O L L                                  *
 //***********************************************************************************************
 // Set scrolling on/off.                                                                        *
 //***********************************************************************************************
-void LCD1602::scroll(bool son)
+void LCD1602::scroll ( bool son )
 {
-  uint8_t ecmd = COMMAND_ENTRY_MODE_SET | // Assume no scroll
-                 FLAG_ENTRY_MODE_SET_ENTRY_INCREMENT;
+  uint8_t ecmd = COMMAND_ENTRY_MODE_SET |               // Assume no scroll
+                 FLAG_ENTRY_MODE_SET_ENTRY_INCREMENT ;
 
-  if (son) // Scroll on?
+  if ( son )                                            // Scroll on?
   {
-    ecmd |= FLAG_ENTRY_MODE_SET_ENTRY_SHIFT_ON; // Yes, change function
+    ecmd |= FLAG_ENTRY_MODE_SET_ENTRY_SHIFT_ON ;        // Yes, change function
   }
-  write_cmd(ecmd); // Perform command
+  write_cmd ( ecmd ) ;                                  // Perform command
 }
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: S H O M E                                    *
@@ -172,8 +148,9 @@ void LCD1602::scroll(bool son)
 //***********************************************************************************************
 void LCD1602::shome()
 {
-  write_cmd(COMMAND_RETURN_HOME);
+  write_cmd ( COMMAND_RETURN_HOME ) ;
 }
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2 :: R E S E T                                    *
@@ -182,30 +159,31 @@ void LCD1602::shome()
 //***********************************************************************************************
 void LCD1602::reset()
 {
-  scommand(0); // Put expander to known state
-  delayMicroseconds(1000);
-  for (int i = 0; i < 3; i++) // Repeat 3 times
+  scommand ( 0 ) ;                                // Put expander to known state
+  delayMicroseconds ( 1000 ) ;
+  for ( int i = 0 ; i < 3 ; i++ )                 // Repeat 3 times
   {
-    strobe(0x03 << 4); // Select 4-bit mode
-    delayMicroseconds(4500);
+    strobe ( 0x03 << 4 ) ;                        // Select 4-bit mode
+    delayMicroseconds ( 4500 ) ;
   }
-  strobe(0x02 << 4); // 4-bit
-  delayMicroseconds(4500);
-  write_cmd(COMMAND_FUNCTION_SET |
-            FLAG_FUNCTION_SET_MODE_4BIT |
-            FLAG_FUNCTION_SET_LINES_2 |
-            FLAG_FUNCTION_SET_DOTS_5X8);
-  write_cmd(COMMAND_DISPLAY_CONTROL |
-            FLAG_DISPLAY_CONTROL_DISPLAY_ON);
-  sclear();
-  write_cmd(COMMAND_ENTRY_MODE_SET |
-            FLAG_ENTRY_MODE_SET_ENTRY_INCREMENT);
-  shome();
-  for (char a = 'a'; a < 'q'; a++)
+  strobe ( 0x02 << 4 ) ;                          // 4-bit
+  delayMicroseconds ( 4500 ) ;
+  write_cmd ( COMMAND_FUNCTION_SET |
+              FLAG_FUNCTION_SET_MODE_4BIT |
+              FLAG_FUNCTION_SET_LINES_2 |
+              FLAG_FUNCTION_SET_DOTS_5X8 ) ;
+  write_cmd ( COMMAND_DISPLAY_CONTROL |
+              FLAG_DISPLAY_CONTROL_DISPLAY_ON ) ;
+  sclear() ;
+  write_cmd ( COMMAND_ENTRY_MODE_SET |
+              FLAG_ENTRY_MODE_SET_ENTRY_INCREMENT ) ;
+  shome() ;
+  for ( char a = 'a' ; a < 'q' ; a++ )
   {
-    print(a);
+    print ( a ) ;
   }
 }
+
 
 //**************************************************************************************************
 //                                          I 2 C S C A N                                          *
@@ -218,7 +196,7 @@ void LCD1602::reset()
 
 //   ESP_LOGI ( LTAG, "Scanning I2C bus..." ) ;
 
-//   for ( address = 1 ; address < 127 ; address++ )
+//   for ( address = 1 ; address < 127 ; address++ ) 
 //   {
 //     Wire.beginTransmission ( address ) ;
 //     error = Wire.endTransmission() ;
@@ -226,336 +204,190 @@ void LCD1602::reset()
 //     {
 //       ESP_LOGI ( LTAG, "I2C device 0x%02X found", address ) ;
 //     }
-//     else if ( error == 4 )
+//     else if ( error == 4 ) 
 //     {
 //       ESP_LOGE ( LTAG, "Error 4 at address 0x%02X", address ) ;
-//     }
+//     }    
 //   }
 // }
+
 
 //***********************************************************************************************
 //                                L C D 1 6 0 2                                                 *
 //***********************************************************************************************
 // Constructor for the display.                                                                 *
 //***********************************************************************************************
-LCD1602::LCD1602(int8_t sda, int8_t scl)
+LCD1602::LCD1602 ( int8_t sda, int8_t scl )
 {
-  uint8_t error;
+  uint8_t error ;
 
-  if (!Wire.begin(sda, scl)) // Init I2c
+  if ( ! Wire.begin ( sda, scl ) )                             // Init I2c
   {
-    ESP_LOGE(LTAG, "I2C driver install error!");
+    ESP_LOGE ( LTAG, "I2C driver install error!" ) ;
   }
   else
   {
     // i2cscan() ;                                               // Scan I2C bus
-    Wire.beginTransmission(LCD_I2C_ADDRESS);
-    error = Wire.endTransmission();
-    if (error)
+    Wire.beginTransmission ( LCD_I2C_ADDRESS ) ;
+    error = Wire.endTransmission() ;
+    if ( error )
     {
-      ESP_LOGE(LTAG, "Display not found on I2C 0x%02X",
-               LCD_I2C_ADDRESS);
-    }
+      ESP_LOGE ( LTAG, "Display not found on I2C 0x%02X",
+                  LCD_I2C_ADDRESS ) ;
+    }    
   }
-
-  reset();
+  reset() ;
 }
 
-void LCD1602::createChar(uint8_t location, uint8_t charmap[])
+struct dsp_str
 {
-  location &= 0x7; // we only have 8 locations 0-7
-  write_cmd(COMMAND_SET_CGRAM_ADDR | (location << 3));
-  for (int i = 0; i < 8; i++)
-  {
-    write_data(charmap[i]);
-  }
-}
+  String          str ;
+  uint16_t        len ;                                 // Length of string to show
+  uint16_t        pos ;                                 // Start on this position of string
+  uint8_t         row ;                                 // Row on display  
+} ;
 
-bool LCD1602_dsp_begin(int8_t sda, int8_t scl)
+dsp_str dline[2] = { { "", 0, 0, 0 },
+                     { "", 0, 0, 0 }
+                   } ;
+
+bool LCD1602_dsp_begin ( int8_t sda, int8_t scl )
 {
-  ESP_LOGI(LTAG, "Init LCD1602, I2C pins %d,%d", sda, scl);
-  if ((sda >= 0) && (scl >= 0))
+  ESP_LOGI ( LTAG, "Init LCD1602, I2C pins %d,%d", sda, scl ) ;
+  if ( ( sda >= 0 ) && ( scl >= 0 ) )
   {
-    LCD1602_tft = new LCD1602(sda, scl); // Create an instance for TFT
+    LCD1602_tft = new LCD1602 ( sda, scl ) ;            // Create an instance for TFT
   }
   else
   {
-    ESP_LOGE(LTAG, "Init LCD1602 failed!");
+    ESP_LOGE ( LTAG, "Init LCD1602 failed!" ) ;
   }
-  return (LCD1602_tft != NULL);
+  return ( LCD1602_tft != NULL ) ;
 }
+
 
 //***********************************************************************************************
 //                                D S P _U P D A T E _ L I N E                                  *
 //***********************************************************************************************
 // Show a selected line                                                                         *
 //***********************************************************************************************
-void LCD1602_dsp_update_line(uint8_t lnr)
+void LCD1602_dsp_update_line ( uint8_t lnr )
 {
-  // ESP_LOGI(LTAG,"Refreshing %d widget",lnr);
-  const char *p;
+  uint8_t         i ;                                // Index in string
+  const char*     p ;
 
-  // ESP_LOGI(LTAG,"%s",toshow.c_str());
-  uint segmentlen = LCD1602_tftdata[lnr].len;
-  uint fulllength = LCD1602_tftdata[lnr].str.length();
-
-  LCD1602_tft->scursor(LCD1602_tftdata[lnr].col, LCD1602_tftdata[lnr].row);
-
-  if (fulllength > 0)
+  p = dline[lnr].str.c_str() ;
+  dline[lnr].len = strlen ( p ) ;
+  //ESP_LOGI ( LTAG, "Strlen is %d, str is %s", len, p ) ;
+  if ( dline[lnr].len > 16 )
   {
-    int sliceend = std::min(LCD1602_tftdata[lnr].pos + segmentlen, fulllength);
-    // ESP_LOGI(LTAG,"%s",LCD1602_tftdata[lnr].str.c_str());
-    //  ESP_LOGI(LTAG, "%s, Full: %d, SegStart:%d, SegEnd:%d", LCD1602_tftdata[lnr].str.substring(LCD1602_tftdata[lnr].pos, sliceend - 1).c_str(), fulllength, LCD1602_tftdata[lnr].pos, sliceend);
-    p = LCD1602_tftdata[lnr].str.c_str();
-    p += LCD1602_tftdata[lnr].pos;
-    for (int i = LCD1602_tftdata[lnr].pos; i < sliceend; i++)
+    if ( dline[lnr].pos >= dline[lnr].len )
     {
-      if ((*p >= ' ') && (*p <= '~')) // Printable?
-      {
-        LCD1602_tft->print(*p); // Yes
-      }
-      else
-      {
-        LCD1602_tft->print(' '); // Yes, print space
-      }
-      p++;
-    }
-
-    if (sliceend != fulllength)
-    {
-      LCD1602_tftdata[lnr].pos++;
+      dline[lnr].pos = 0 ;
     }
     else
     {
-      // restart scroll from 0
-      LCD1602_tftdata[lnr].pos = 0;
+      p += dline[lnr].pos ;
     }
-    if (fulllength <= segmentlen && tftdata[lnr].scrollable)
+    dline[lnr].len -= dline[lnr].pos ;
+    if ( dline[lnr].len > 16 )
     {
-      ESP_LOGI(LTAG, "Section %d switching to non scroll", lnr);
+      dline[lnr].len = 16 ;
     }
-    if (fulllength > segmentlen && !tftdata[lnr].scrollable)
-    {
-      ESP_LOGI(LTAG, "Section %d switching to scroll", lnr);
-    }
-    tftdata[lnr].scrollable = fulllength <= segmentlen ? false : true;
   }
   else
   {
-    // clear space
-    for (int i = 0; i < LCD1602_tftdata[lnr].len; i++)
+    dline[lnr].pos = 0 ;                             // String fits on screen
+  }
+  dline[lnr].pos++ ;
+  LCD1602_tft->scursor ( 0, lnr ) ;
+  for ( i = 0 ; i < dline[lnr].len ; i++ )
+  {
+    if ( ( *p >= ' ' ) && ( *p <= '~' ) )            // Printable?
     {
-      LCD1602_tft->print(' ');
+      LCD1602_tft->print ( *p ) ;                    // Yes
     }
+    else
+    {
+      LCD1602_tft->print ( ' ' ) ;                   // Yes, print space
+    }
+    p++ ;
+  }
+  for ( i = 0 ; i < ( 16 - dline[lnr].len ) ; i++ )  // Fill remainder
+  {
+    LCD1602_tft->print ( ' ' ) ;
+  }
+  if ( *p == '\0' )                                  // At end of line?
+  {
+    dline[lnr].pos = 0 ;                             // Yes, start allover
   }
 }
+
 
 //***********************************************************************************************
 //                                D S P _U P D A T E                                            *
 //***********************************************************************************************
 // Show a selection of the 4 sections                                                           *
 //***********************************************************************************************
-
-void replacespecchars(String &s)
+void LCD1602_dsp_update ( bool isvolume )
 {
-  //char *convertted = convertUsingCustomChars(s.c_str(), false);
-  //ESP_LOGI(LTAG,"Converted %s",convertted);
-  s.replace("á", "a");
-  s.replace("Á", "A");
-  s.replace("é", "e");
-  s.replace("É", "E");
-  s.replace("ó", "o");
-  s.replace("Ó", "O");
-  s.replace("ö", "o");
-  s.replace("Ö", "O");
-  s.replace("ú", "u");
-  s.replace("Ú", "U");
-  s.replace("ü", "u");
-  s.replace("Ű", "u");
-  //s = String(convertted);
-  for (int i = 0; i < s.length(); i++)
-  {
-    if ((s[i] < ' ') || (s[i] > '~'))
-    {
-      s[i] = ' ';
-    }
-  }
-}
+  static uint16_t cnt = 0 ;                                 // Reduce updates
 
-void filltexttomax(String &s, int len)
-{
-  s.trim(); // Remove non printing
-  replacespecchars(s);
-  if (s.length() < len)
+  if ( cnt++ != 8 )                                         // Action every 8 calls
   {
-    uint8_t fill = len - s.length();
-    // ESP_LOGI(LTAG, "Str: %s, fill: %d front: %s", s, fill, fillfront ? "true" : "false");
-    for (int i = 0; i < fill; i++)
-    {
-      s += " ";
-    }
+    return ;
   }
-}
-
-void LCD1602_dsp_update(bool isvolume, int section)
-{
-  if (LCD1602_tftdata[section].scrollable)
+  cnt = 0 ;
+  if ( ! isvolume )                                         // Encoder menu mode?
   {
-    LCD1602_tftdata[section].refreshCount++;
-    if (LCD1602_tftdata[section].refreshCount < 7) // Action every 8 calls
-    {
-      return;
-    }
-    LCD1602_tftdata[section].refreshCount = 0;
-  }
-
-  if (!isvolume) // Encoder menu mode?
-  {
-    // dline[0].str = LCD1602_tftdata[3].str.substring(0, 16)); // Yes, different lines
-    // dline[1].str = LCD1602_tftdata[3].str.substring(16);
+    dline[0].str = LCD1602_tftdata[3].str.substring(0,16) ; // Yes, different lines
+    dline[1].str = LCD1602_tftdata[3].str.substring(16) ;
   }
   else
   {
-    // for (int i = 0; i < TFTSECS; i++)
-    //{
-    //}
+    dline[0].str = LCD1602_tftdata[1].str ;                 // Local copy
+    dline[1].str = LCD1602_tftdata[2].str ;                 // Local copy
+  }  
+  dline[0].str.trim() ;                                     // Remove non printing
+  dline[1].str.trim() ;                                     // Remove non printing
+  if ( dline[0].str.length() > 16 )
+  {
+    dline[0].str += String ( "  " ) ;
   }
-  // for (int i = 0; i < TFTSECS; i++)
-  //{
-  //  if (LCD1602_tftdata[i].update_req)
-  // {
-  // LCD1602_dsp_update_line(i);
-  // LCD1602_tftdata[i].update_req = false;
-  //}
-  //}
-  LCD1602_tftdata[section].str.trim();
-  filltexttomax(LCD1602_tftdata[section].str, LCD1602_tftdata[section].len);
-  LCD1602_dsp_update_line(section);
+  if ( dline[1].str.length() > 16 )
+  {
+    dline[1].str += String ( "  " ) ;
+  }
+  LCD1602_dsp_update_line ( 0 ) ;
+  LCD1602_dsp_update_line ( 1 ) ;
 }
+
 
 //**************************************************************************************************
 //                                      D I S P L A Y B A T T E R Y                                *
 //**************************************************************************************************
 // Dummy routine for this type of display.                                                         *
 //**************************************************************************************************
-void LCD1602_displaybattery(uint16_t bat0, uint16_t bat100, uint16_t adcval)
+void LCD1602_displaybattery ( uint16_t bat0, uint16_t bat100, uint16_t adcval )
 {
 }
+
 
 //**************************************************************************************************
 //                                      D I S P L A Y V O L U M E                                  *
 //**************************************************************************************************
 // Dummy routine for this type of display.                                                         *
 //**************************************************************************************************
-void LCD1602_displayvolume(uint8_t vol)
+void LCD1602_displayvolume ( uint8_t vol )
 {
 }
+
 
 //**************************************************************************************************
 //                                      D I S P L A Y T I M E                                      *
 //**************************************************************************************************
 // Dummy routine for this type of display.                                                         *
 //**************************************************************************************************
-void LCD1602_displaytime(const char *str, uint16_t color)
+void LCD1602_displaytime ( const char* str, uint16_t color )
 {
-}
-//**************************************************************************************************
-//                                      D I S P L A Y T I M E                                      *
-//**************************************************************************************************
-// Dummy routine for this type of display.                                                         *
-//**************************************************************************************************
-
-void LCD1602_displaybitrate(const char *str, uint16_t color)
-{
-}
-
-void createCustomChars()
-{
-  byte charA[8] = {
-      0b00010,
-      0b00100,
-      0b01110,
-      0b10001,
-      0b11111,
-      0b10001,
-      0b10001,
-      0b00000}; // Á
-
-  byte charE[8] = {
-      0b00001,
-      0b00010,
-      0b11111,
-      0b10000,
-      0b11111,
-      0b10000,
-      0b11111,
-      0b00000}; // É
-
-  byte charO[8] = {
-      0b00010,
-      0b00100,
-      0b01110,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b01110,
-      0b00000}; // Ó
-
-  byte charOO[8] = {
-      0b01010,
-      0b00000,
-      0b01110,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b01110,
-      0b00000}; // Ö
-
-  byte charOOO[8] = {
-      0b00101,
-      0b01010,
-      0b01110,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b01110,
-      0b00000}; // Ő
-
-  byte charU[8] = {
-      0b00010,
-      0b00100,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b01110,
-      0b00000}; // Ú
-
-  byte charUU[8] = {
-      0b01010,
-      0b00000,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b01110,
-      0b00000}; // Ü
-
-  byte charUUU[8] = {
-      0b00101,
-      0b01010,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b10001,
-      0b01110,
-      0b00000}; // Ű
-
-  LCD1602_tft->createChar(0, charA);
-  LCD1602_tft->createChar(1, charE);
-  LCD1602_tft->createChar(2, charO);
-  LCD1602_tft->createChar(3, charOO);
-  LCD1602_tft->createChar(4, charOOO);
-  LCD1602_tft->createChar(5, charU);
-  LCD1602_tft->createChar(6, charUU);
 }

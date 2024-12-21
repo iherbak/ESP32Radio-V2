@@ -26,7 +26,7 @@ tonehf = 0
 tonela = 0
 tonelf = 0
 #
-preset = 1
+preset = 2
 # Some preset examples
 preset_01 = asculta.danceeffect.ro:3333 # Dance Effect Radio
 preset_02 = icast.connectmedia.hu/4726/mr1ex.mp3 # Kosuth Radio

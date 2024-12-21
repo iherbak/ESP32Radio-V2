@@ -570,8 +570,8 @@ mqttpubc mqttpub; // Instance for mqttpubc
 #ifdef OLED1106
 #include "oled.h" // For OLED I2C SH1106 64x128 display
 #endif
-#ifdef LCD1602I2C
-#include "LCD1602.h" // For LCD 1602 display (I2C)
+#ifdef LCD4002I2C
+#include "LCD4002.h" // For LCD 1602 display (I2C)
 #endif
 #ifdef LCD2004I2C
 #include "LCD2004.h" // For LCD 2004 display (I2C)
@@ -585,6 +585,7 @@ mqttpubc mqttpub; // Instance for mqttpubc
 
 // Include software for SD card.  Will include dummy if "SDCARD" is not defined
 #include "SDcard.h" // For SD card interface
+#include <Preferences.h>
 
 //**************************************************************************************************
 //                                  M Y Q U E U E S E N D                                          *
@@ -635,7 +636,11 @@ void nvsopen()
     nvserr = nvs_open(NAME, NVS_READWRITE, &nvshandle); // No, open nvs
     if (nvserr)
     {
-      ESP_LOGE(TAG, "nvs_open failed!");
+      ESP_LOGE("NVS", "nvs_open failed!");
+    }
+    else
+    {
+      ESP_LOGE("NVS", "nvs_open SUCCESSFULL");
     }
   }
 }
@@ -658,6 +663,7 @@ esp_err_t nvsclear()
 //**************************************************************************************************
 String nvsgetstr(const char *key)
 {
+  const char *logtag = "nvssgetstr";
   static char nvs_buf[NVSBUFSIZE]; // Buffer for contents
   size_t len = NVSBUFSIZE;         // Max length of the string, later real length
 
@@ -666,9 +672,9 @@ String nvsgetstr(const char *key)
   nvserr = nvs_get_str(nvshandle, key, nvs_buf, &len);
   if (nvserr)
   {
-    ESP_LOGE(TAG, "nvs_get_str failed %X for key %s, keylen is %d, len is %d!",
+    ESP_LOGE(logtag, "nvs_get_str failed %X for key %s, keylen is %d, len is %d!",
              nvserr, key, strlen(key), len);
-    ESP_LOGE(TAG, "Contents: %s", nvs_buf);
+    ESP_LOGE(logtag, "Contents: %s", nvs_buf);
   }
   return String(nvs_buf);
 }
@@ -681,27 +687,29 @@ String nvsgetstr(const char *key)
 //**************************************************************************************************
 esp_err_t nvssetstr(const char *key, String val)
 {
+  const char *logtag = "nvssetstr";
   String curcont;    // Current contents
   bool wflag = true; // Assume update or new key
 
   // ESP_LOGI ( TAG, "Setstring for %s: %s", key, val.c_str() ) ;
   if (val.length() >= NVSBUFSIZE) // Limit length of string to store
   {
-    ESP_LOGE(TAG, "nvssetstr length failed!");
+    ESP_LOGE(logtag, "nvssetstr length failed!");
     return ESP_ERR_NVS_NOT_ENOUGH_SPACE;
   }
   if (nvssearch(key)) // Already in nvs?
   {
+    ESP_LOGI(logtag, "nvssetstr %s key is already in nvs");
     curcont = nvsgetstr(key); // Read current value
     wflag = (curcont != val); // Value change?
   }
   if (wflag) // Update or new?
   {
-    // ESP_LOGI ( TAG, "nvssetstr update value" ) ;
+    ESP_LOGI(logtag, "nvssetstr update value");
     nvserr = nvs_set_str(nvshandle, key, val.c_str()); // Store key and value
     if (nvserr)                                        // Check error
     {
-      ESP_LOGE(TAG, "nvssetstr failed!");
+      ESP_LOGE(logtag, "nvssetstr failed!");
     }
   }
   return nvserr;
@@ -751,7 +759,7 @@ void tftset(uint16_t inx, const char *str)
     {
       if (strlen(str) > 0)
       {
-        //ESP_LOGI("tftset", "setting tft %d %s", inx, str);
+        // ESP_LOGI("tftset", "setting tft %d %s", inx, str);
         tftMessage message;
         strcpy(message.message, str);
         message.section = inx;
@@ -822,6 +830,8 @@ bool updateNr(int16_t *pnr, int16_t maxnr, int16_t nr, bool relative)
 bool nextPreset(int16_t pnr, bool relative = false)
 {
   // ESP_LOGI ( TAG, "nextpreset called with pnr = %d", pnr ) ;
+  ESP_LOGI(TAG, "nextpreset %d", presetinfo.station_state);
+  ESP_LOGI(TAG, "nextpreset %s %s", presetinfo.playlisthost.c_str(), presetinfo.host.c_str());
   if ((presetinfo.station_state == ST_STATION) || // In station mode?
       (presetinfo.station_state == ST_REDIRECT))  // or redirect mode?
   {
@@ -1590,9 +1600,9 @@ void otaerror(ota_error_t error)
 //**************************************************************************************************
 bool readhostfrompref(int16_t preset, String *host, String *hsym)
 {
-  char tkey[12]; // Key as an array of char
-  int inx;       // Position of comment in preset
-
+  const char *logtag = "readhostfrompref";
+  char tkey[12];                      // Key as an array of char
+  int inx;                            // Position of comment in preset
   sprintf(tkey, "preset_%d", preset); // Form the search key
   if (!nvssearch(tkey))               // Does _x[x[x]] exists?
   {
@@ -1609,6 +1619,8 @@ bool readhostfrompref(int16_t preset, String *host, String *hsym)
     }
   }
   // Get the contents
+  ESP_LOGI(logtag, "getting station at %s preset", tkey);
+
   *host = nvsgetstr(tkey); // Get the station
   if (hsym)                // Symbolic name parameter wanted?
   {
@@ -1821,6 +1833,7 @@ void readIOprefs()
 //**************************************************************************************************
 String readprefs(bool output)
 {
+  const char *logtag = "readprefs";
   uint16_t i;             // Loop control
   String val;             // Contents of preference entry
   String cmd;             // Command for analyzCmd
@@ -1833,9 +1846,9 @@ String readprefs(bool output)
   for (i = 0; i < MAXKEYS; i++)  // Loop trough all available keys
   {
     key = nvskeys[i]; // Examine next key
-    // ESP_LOGI ( TAG, "Key[%d] is %s", i, key ) ;
     if (*key == '\0')
-      break;              // Stop on end of list
+      break; // Stop on end of list
+    //ESP_LOGI(logtag, "Key[%d] is %s", i, key);
     val = nvsgetstr(key); // Read value of this key
     cmd = String(key) +   // Yes, form command
           String(" = ") +
@@ -2124,6 +2137,7 @@ void scandigital()
 //**************************************************************************************************
 void scanIR()
 {
+  const char *logtag = "scanIR";
   char mykey[20];    // For numerated key
   String val;        // Contents of preference entry
   const char *reply; // Result of analyzeCmd
@@ -2134,14 +2148,14 @@ void scanIR()
     if (nvssearch(mykey))
     {
       val = nvsgetstr(mykey); // Get the contents
-      ESP_LOGI(TAG, "IR code %04X received. Will execute %s",
+      ESP_LOGI(logtag, "IR code %04X received. Will execute %s",
                ir_value, val.c_str());
       reply = analyzeCmd(val.c_str()); // Analyze command and handle it
-      ESP_LOGI(TAG, "%s", reply);      // Result for debugging
+      ESP_LOGI(logtag, "%s", reply);   // Result for debugging
     }
     else
     {
-      ESP_LOGI(TAG, "IR code %04X received, but not found in preferences!  Timing %d/%d",
+      ESP_LOGI(logtag, "IR code %04X received, but not found in preferences!  Timing %d/%d",
                ir_value, ir_0, ir_1);
     }
     ir_value = 0; // Reset IR code received
@@ -2257,6 +2271,12 @@ void bubbleSortKeys(uint16_t n)
   }
 }
 
+void setdefaultnvskeys()
+{
+  nvssetstr("preset", "0");
+  nvssetstr("preset_0","stream.diazol.hu:35150/stream # SuperDJ Radio");
+  nvs_commit(nvshandle);
+}
 //**************************************************************************************************
 //                                      F I L L K E Y L I S T                                      *
 //**************************************************************************************************
@@ -2288,6 +2308,10 @@ void fillkeylist()
   nvs_release_iterator(it);  // Release resource
   nvskeys[nvsinx][0] = '\0'; // Empty key at the end
   ESP_LOGI(TAG, "Read %d keys from NVS", nvsinx);
+  if (nvsinx == 0)
+  {
+    setdefaultnvskeys();
+  }
   bubbleSortKeys(nvsinx); // Sort the keys
 }
 
@@ -2653,9 +2677,11 @@ void setup()
     dsp_erase();                           // Clear screen
   }
   // tftset(0, NAME);                            // Set screen segment text top line
-  presetinfo.station_state = ST_PRESET;       // Start in preset mode
-  if (nextPreset(nvsgetstr("preset").toInt(), // Restore last preset
-                 false))
+  presetinfo.station_state = ST_PRESET; // Start in preset mode
+  auto preset = nvsgetstr("preset");
+  ESP_LOGI("pressett", "%d", preset.length());
+    preset = "0";
+  if (nextPreset(preset.toInt(), false))
   {
     if (NetworkFound) // Start with preset if network available
     {
@@ -3217,7 +3243,7 @@ void dspfuncs()
       tftMessage nextMessage;
       if (xQueueReceive(dspqueue, &nextMessage, 0) == pdTRUE)
       {
-        //ESP_LOGI(TAG, "New message for section %d : %s", nextMessage.section, nextMessage.message);
+        // ESP_LOGI(TAG, "New message for section %d : %s", nextMessage.section, nextMessage.message);
         if (tftdata[nextMessage.section].str != nextMessage.message)
         {
           tftdata[nextMessage.section].refreshCount = 100;
