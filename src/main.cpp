@@ -570,8 +570,11 @@ mqttpubc mqttpub; // Instance for mqttpubc
 #ifdef OLED1106
 #include "oled.h" // For OLED I2C SH1106 64x128 display
 #endif
+#ifdef LCD1602I2C
+#include "LCD1602.h" // For LCD 4002I2C display (I2C)
+#endif
 #ifdef LCD4002I2C
-#include "LCD4002.h" // For LCD 1602 display (I2C)
+#include "LCD4002.h" // For LCD 4002I2C display (I2C)
 #endif
 #ifdef LCD2004I2C
 #include "LCD2004.h" // For LCD 2004 display (I2C)

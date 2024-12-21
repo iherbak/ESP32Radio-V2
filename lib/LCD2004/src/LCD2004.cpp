@@ -40,7 +40,7 @@ scrseg_struct     LCD2004_tftdata[TFTSECS] =                // Screen divided in
 } ;
 
 LCD2004* LCD2004_tft = NULL ;
-const char*   LTAG = "LCD1602" ;                            // For debugging
+const char*   LTAG = "LCD2004" ;                            // For debugging
 
 
 bool LCD2004_dsp_begin (  int8_t sda, int8_t scl  )
